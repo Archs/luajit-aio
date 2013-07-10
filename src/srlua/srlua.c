@@ -69,6 +69,27 @@ static int pmain(lua_State *L)
  int i;
  lua_gc(L,LUA_GCSTOP,0);
  luaL_openlibs(L);
+
+  // other libs
+  iuplua_open(L);
+  iupcontrolslua_open(L);
+  iupkey_open(L); 
+  // iuplua_close(L);
+  // iup_pplotlua_open(L);
+  // cd
+  cdlua_open(L);
+  cdluaiup_open(L);
+  // iupcontrolslua_close(L);
+  // im
+  iupimlua_open(L);
+  imlua_open(L);
+  imlua_open_process(L);
+  // imlua_open_cd(L);
+  // gl
+  iupolelua_open(L);
+  iupgllua_open(L);
+  // end other libs
+
  lua_gc(L,LUA_GCRESTART,0);
  load(L,argv[0]);
  lua_createtable(L,argc,0);
