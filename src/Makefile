@@ -740,7 +740,7 @@ SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O)
+sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O)
 	$(E) "LINK      $@"
 	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) \
 		-static -liuplua51 \
@@ -759,8 +759,28 @@ sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O)
 		-L$(IUP_DIR) \
 		-L$(CD_DIR) \
 		-L$(IM_DIR)
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) \
+		-Wl,-subsystem,windows -Wl,-eWinMainSR \
+		-static -liuplua51 \
+		-liupluagl51 -liupluaimglib51 \
+		-liupluaole51 \
+		-liup -liupgl\
+		-liupimglib -liupole \
+		-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
+		-liupluacontrols51 -liupcontrols  \
+		-liupluacd51 -liupcd -lcdlua51 -liupim \
+		-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
+		-liupluaim51 -lz -lstdc++ -lkernel32\
+		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
+		-lsnmpapi -lWinspool  -lopengl32\
+		-lrpcrt4 -lwsock32 \
+		-L$(IUP_DIR) \
+		-L$(CD_DIR) \
+		-L$(IM_DIR)
 	$(Q)$(TARGET_STRIP) $(SRLUA).exe
+	$(Q)$(TARGET_STRIP) $(WSRLUA).exe
 	$(Q)mv $(SRLUA).exe ..
+	$(Q)mv $(WSRLUA).exe ..
 	$(E) "LINK      glue.exe"
 	$(TARGET_LD) $(TARGET_ALDFLAGS) $(GLUE_O) -o $(GLUE).exe
 	$(Q)$(TARGET_STRIP) $(GLUE).exe
