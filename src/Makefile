@@ -685,12 +685,14 @@ include Makefile.dep
 $(LUAJIT_A): $(LJVMCORE_O)
 	$(E) "AR        $@"
 	$(Q)$(TARGET_AR) $@ $(LJVMCORE_O)
+	$(Q)cp $@ ..
 
 # The dependency on _O, but linking with _DYNO is intentional.
 $(LUAJIT_SO): $(LJVMCORE_O)
 	$(E) "DYNLINK   $@"
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS)  -lrpcrt4 -lwsock32
 	$(Q)$(TARGET_STRIP) $@
+	$(Q)cp $@ ..
 
 $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(E) "LINK      $@"
@@ -723,6 +725,7 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built LuaJIT"
+	$(Q)mv $@ ..
 
 ##############################################################################
 
@@ -741,8 +744,11 @@ sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O)
 	$(E) "LINK      $@"
 	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) \
 		-lrpcrt4 -lwsock32
+	$(Q)$(TARGET_STRIP) $(SRLUA).exe
+	$(Q)mv $(SRLUA).exe ..
 	$(E) "LINK      glue.exe"
 	$(TARGET_LD) $(TARGET_ALDFLAGS) $(GLUE_O) -o $(GLUE).exe
-
+	$(Q)$(TARGET_STRIP) $(GLUE).exe
+	$(Q)mv $(GLUE).exe ..
 
 
