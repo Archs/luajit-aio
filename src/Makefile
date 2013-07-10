@@ -692,9 +692,9 @@ $(LUAJIT_SO): $(LJVMCORE_O)
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS)  -lrpcrt4 -lwsock32
 	$(Q)$(TARGET_STRIP) $@
 
-$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(LUAJIT_A)
+$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(LUAJIT_SO)\
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)\
 		-static -liuplua51 \
 		-liupluagl51 -liupluaimglib51 \
 		-liupluaole51 \
@@ -704,13 +704,13 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(LUAJIT_A)
 		-liupluacontrols51 -liupcontrols  \
 		-liupluacd51 -liupcd -lcdlua51 -liupim \
 		-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
-		-liupluaim51 -lz -L. -lluajit\
+		-liupluaim51 -lz -lstdc++ -lkernel32\
 		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
-		-lsnmpapi -lWinspool  -lopengl32 -lmsvcrt -lstdc++ \
+		-lsnmpapi -lWinspool  -lopengl32\
 		-lrpcrt4 -lwsock32 \
 		-L$(IUP_DIR) \
 		-L$(CD_DIR) \
-		-L$(IM_DIR) \
+		-L$(IM_DIR)
 		# end
 		# -L../3rd-party/iup-3.8_Win32_dllw4_lib
 		#   -liup_scintilla 
