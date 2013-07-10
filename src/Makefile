@@ -692,9 +692,9 @@ $(LUAJIT_SO): $(LJVMCORE_O)
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS)  -lrpcrt4 -lwsock32
 	$(Q)$(TARGET_STRIP) $@
 
-$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
+$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(LUAJIT_A)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(LUAJIT_SO) \
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(LUAJIT_SO)\
 		-static -liuplua51 \
 		-liupluagl51 -liupluaimglib51 \
 		-liupluaole51 \
@@ -704,9 +704,10 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 		-liupluacontrols51 -liupcontrols  \
 		-liupluacd51 -liupcd -lcdlua51 -liupim \
 		-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
-		-liupluaim51 -lz\
+		-liupluaim51 -lz -L. -lluajit\
 		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
 		-lsnmpapi -lWinspool  -lopengl32 -lmsvcrt -lstdc++ \
+		-lrpcrt4 -lwsock32 \
 		-L$(IUP_DIR) \
 		-L$(CD_DIR) \
 		-L$(IM_DIR) \
@@ -724,3 +725,20 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(E) "OK        Successfully built LuaJIT"
 
 ##############################################################################
+
+##############################################################################
+# Building srlua
+##############################################################################
+SRLUA=srlua
+WSRLUA=wsrlua
+GLUE=glue
+
+SRLUA_O=srlua/$(SRLUA).o
+WSRLUA_O=srlua/$(WSRLUA).o
+GLUE_O=srlua/$(GLUE).o
+
+sr: $(LJVMCORE_O) $(SRLUA_O) $(LUAJIT_A)
+	$(E) "LINK      $@"
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(LJVMCORE_O) \
+	-static -L. -lluajit -lrpcrt4 -lwsock32
+
