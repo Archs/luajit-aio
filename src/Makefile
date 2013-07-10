@@ -737,8 +737,12 @@ SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr: $(LJVMCORE_O) $(SRLUA_O) $(LUAJIT_A)
+sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(LJVMCORE_O) \
-	-static -L. -lluajit -lrpcrt4 -lwsock32
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) \
+		-lrpcrt4 -lwsock32
+	$(E) "LINK      glue.exe"
+	$(TARGET_LD) $(TARGET_ALDFLAGS) $(GLUE_O) -o $(GLUE).exe
+
+
 

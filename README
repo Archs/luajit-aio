@@ -1,3 +1,15 @@
+Building 
+-----------------------
+
+1. Dynamic Build
+
+    make
+
+2. Dynamic Build    
+
+    make BUILDMODE=static
+
+
 README for LuaJIT 2.0.2
 -----------------------
 
