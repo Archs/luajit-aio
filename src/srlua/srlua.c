@@ -77,17 +77,17 @@ static int pmain(lua_State *L)
   // iuplua_close(L);
   // iup_pplotlua_open(L);
   // cd
-  cdlua_open(L);
-  cdluaiup_open(L);
+  // cdlua_open(L);
+  // cdluaiup_open(L);
   // iupcontrolslua_close(L);
   // im
-  iupimlua_open(L);
-  imlua_open(L);
-  imlua_open_process(L);
+  // iupimlua_open(L);
+  // imlua_open(L);
+  // imlua_open_process(L);
   // imlua_open_cd(L);
   // gl
-  iupolelua_open(L);
-  iupgllua_open(L);
+  // iupolelua_open(L);
+  // iupgllua_open(L);
   // end other libs
 
  lua_gc(L,LUA_GCRESTART,0);
