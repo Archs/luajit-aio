@@ -1,0 +1,7 @@
+*.8
+*.6
+*.o
+*.exe
+*.dll
+*.swp
+*.sublime*
