@@ -705,15 +705,19 @@ $(LUAJIT_A): $(LJVMCORE_O)
 $(LUAJIT_SO): $(LJVMCORE_O)
 	$(E) "DYNLINK   $@"
 	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
-		-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 		-static -Llib \
-		-limlua51 -lcdlua51 \
-		-lcdluaim51 -lcdluagl51 -limlua51 \
+		-lcdlua51 \
+		-lcdluagl51 \
+		-liup_pplot -liupole -limlua_process51 -lim_process \
+		-lcdluaim51 -limlua51 \
 		-lim -lcdcontextplus -lcd -lfreetype6 -lz \
 		-lstdc++ -lkernel32 \
 		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
 		-lsnmpapi -lWinspool  -lopengl32\
-		-lrpcrt4 -lwsock32
+		-lrpcrt4 -lwsock32 \
+		-L$(IUP_DIR) \
+		-L$(CD_DIR) \
+		-L$(IM_DIR)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
