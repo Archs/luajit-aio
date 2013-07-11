@@ -168,7 +168,11 @@ CD_DIR=../3rd-party/cd-5.6.1_Win32_mingw4_lib
 
 
 CC= gcc.exe
-CFLAGS=-I. -I.. -Isocket -I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include
+CFLAGS=-I. -I.. -Isocket -I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
+	   -DCD_NO_OLD_INTERFACE -D_WIN32_WINNT=0x0501 \
+		 	 -D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
+		 	 -DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
+		 	 -DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_
 
 CCOPTIONS= $(CCDEBUG) $(CCOPT) $(CCWARN) $(XCFLAGS) $(CFLAGS)
 LDOPTIONS= $(CCDEBUG) $(LDFLAGS)
@@ -448,7 +452,15 @@ LJVM_O= lj_vm.o
 LJVM_BOUT= $(LJVM_S)
 LJVM_MODE= elfasm
 
-LJLIB_O= lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
+OTHTER_SRC= $(wildcard iup*.c)
+OTHTER_SRC+= $(wildcard il*.c)
+OTHTER_O= $(patsubst %.c,%.o,$(OTHTER_SRC)) 
+
+OLE_SRC= $(wildcard t*.cpp)
+OLE_O= $(patsubst %.cpp,%.o,$(OLE_SRC)) 
+
+LJLIB_O= $(OTHTER_O) \
+	 lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
 	 lib_io.o lib_os.o lib_package.o lib_debug.o lib_jit.o lib_ffi.o \
 	 socket/luasocket.o \
 	 socket/timeout.o \
@@ -465,7 +477,9 @@ LJLIB_O= lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
 	 socket/mime.o\
 	 uuid/wuuid.o\
 	 uuid/luuid.o\
-	 pack/lpack.o
+	 pack/lpack.o\
+	 
+
 
 LJLIB_C= $(LJLIB_O:.o=.c)
 
@@ -523,7 +537,7 @@ ifeq (Windows,$(TARGET_SYS))
   # C modules cannot be loaded, because they bind to lua51.dll.
   ifneq (static,$(BUILDMODE))
     BUILDMODE= dynamic
-    TARGET_XCFLAGS+= -DLUA_BUILD_AS_DLL
+    # TARGET_XCFLAGS+= -DLUA_BUILD_AS_DLL
   endif
 endif
 ifeq (Darwin,$(TARGET_SYS))
@@ -690,7 +704,16 @@ $(LUAJIT_A): $(LJVMCORE_O)
 # The dependency on _O, but linking with _DYNO is intentional.
 $(LUAJIT_SO): $(LJVMCORE_O)
 	$(E) "DYNLINK   $@"
-	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS)  -lrpcrt4 -lwsock32
+	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
+		-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+		-static -Llib \
+		-limlua51 -lcdlua51 \
+		-lcdluaim51 -lcdluagl51 -limlua51 \
+		-lim -lcdcontextplus -lcd -lfreetype6 -lz \
+		-lstdc++ -lkernel32 \
+		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
+		-lsnmpapi -lWinspool  -lopengl32\
+		-lrpcrt4 -lwsock32
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
