@@ -456,11 +456,10 @@ OTHTER_SRC= $(wildcard iup*.c)
 OTHTER_SRC+= $(wildcard il*.c)
 OTHTER_O= $(patsubst %.c,%.o,$(OTHTER_SRC)) 
 
-OLE_SRC= $(wildcard t*.cpp)
-OLE_O= $(patsubst %.cpp,%.o,$(OLE_SRC)) 
+CPP_SRC= $(wildcard *.cpp)
+CPP_O= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
 
-LJLIB_O= $(OTHTER_O) \
-	 lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
+LJLIB_O= lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
 	 lib_io.o lib_os.o lib_package.o lib_debug.o lib_jit.o lib_ffi.o \
 	 socket/luasocket.o \
 	 socket/timeout.o \
@@ -478,8 +477,7 @@ LJLIB_O= $(OTHTER_O) \
 	 uuid/wuuid.o\
 	 uuid/luuid.o\
 	 pack/lpack.o\
-	 
-
+	 $(OTHTER_O)
 
 LJLIB_C= $(LJLIB_O:.o=.c)
 
@@ -677,6 +675,11 @@ lj_folddef.h: $(BUILDVM_T) lj_opt_fold.c
 	$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
 	$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
 
+%.o: %.cpp
+	$(E) "CC        $@"
+	$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
+	$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
+
 %.o: %.s
 	$(E) "ASM       $@"
 	$(Q)$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
@@ -702,7 +705,7 @@ $(LUAJIT_A): $(LJVMCORE_O)
 	$(Q)cp $@ ..
 
 # The dependency on _O, but linking with _DYNO is intentional.
-$(LUAJIT_SO): $(LJVMCORE_O)
+$(LUAJIT_SO): $(LJVMCORE_O) $(CPP_O)
 	$(E) "DYNLINK   $@"
 	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
 		-static -Llib \
