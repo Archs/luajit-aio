@@ -1912,23 +1912,23 @@ LUALIB_API void luaL_openlibs(lua_State *L)
 
   // add iuplua
     // other libs
-  iuplua_open(L);
-  iupcontrolslua_open(L);
-  iupkey_open(L); 
+  // iuplua_open(L);
+  // iupcontrolslua_open(L);
+  // iupkey_open(L); 
   // iuplua_close(L);
   // iup_pplotlua_open(L);
   // cd
-  cdlua_open(L);
-  cdluaiup_open(L);
+  // cdlua_open(L);
+  // cdluaiup_open(L);
   // iupcontrolslua_close(L);
   // im
-  iupimlua_open(L);
-  imlua_open(L);
-  imlua_open_process(L);
+  // iupimlua_open(L);
+  // imlua_open(L);
+  // imlua_open_process(L);
   // imlua_open_cd(L);
   // gl
-  iupolelua_open(L);
-  iupgllua_open(L);
+  // iupolelua_open(L);
+  // iupgllua_open(L);
   // end other libs
 
 
