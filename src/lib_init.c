@@ -1916,9 +1916,9 @@ LUALIB_API void luaL_openlibs(lua_State *L)
 
   // add iuplua
   //   other libs
-  iuplua_open(L);
-  iupkey_open(L);
-  iupcontrolslua_open(L);
+  // iuplua_open(L);
+  // iupkey_open(L);
+  // iupcontrolslua_open(L);
   // // iuplua_close(L);
   // // iup_pplotlua_open(L);
   // // cd

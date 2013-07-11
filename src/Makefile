@@ -723,6 +723,7 @@ $(LUAJIT_SO): $(LJVMCORE_O) $(CPP_O)
 		-L$(IM_DIR)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
+	$(Q)cp $@ ../aiox.dll
 
 $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(E) "LINK      $@"
