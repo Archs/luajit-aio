@@ -168,11 +168,13 @@ CD_DIR=../3rd-party/cd-5.6.1_Win32_mingw4_lib
 
 
 CC= gcc.exe
-CFLAGS=-I. -I.. -Ilh -Isocket -I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
-	   -DCD_NO_OLD_INTERFACE -D_WIN32_WINNT=0x0501 \
-		 	 -D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
-		 	 -DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
-		 	 -DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH
+CFLAGS= -I. -I.. -Ilh -Isocket \
+		-I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
+	   	-DCD_NO_OLD_INTERFACE -D_WIN32_WINNT=0x0501 \
+		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
+		-DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
+		-DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH \
+		-DIUPLUA_THREADED
 
 CCOPTIONS= $(CCDEBUG) $(CCOPT) $(CCWARN) $(XCFLAGS) $(CFLAGS)
 LDOPTIONS= $(CCDEBUG) $(LDFLAGS)
@@ -672,13 +674,13 @@ lj_folddef.h: $(BUILDVM_T) lj_opt_fold.c
 
 %.o: %.c
 	$(E) "CC        $@"
-	$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
-	$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
+	$(Q)$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
+	$(Q)$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
 
 %.o: %.cpp
 	$(E) "CC        $@"
-	$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
-	$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
+	$(Q)$(TARGET_DYNCC) $(TARGET_ACFLAGS) -c -o $(@:.o=_dyn.o) $<
+	$(Q)$(TARGET_CC) $(TARGET_ACFLAGS) -c -o $@ $<
 
 %.o: %.s
 	$(E) "ASM       $@"
