@@ -3,7 +3,7 @@
 
 extern int main(int, char **);
 
-int PASCAL WinMainSR(HINSTANCE hinst, HINSTANCE hprev, LPSTR cmdline, int ncmdshow)
+int WinMainSR(HINSTANCE hinst, HINSTANCE hprev, LPSTR cmdline, int ncmdshow)
 {
   int rc;
   

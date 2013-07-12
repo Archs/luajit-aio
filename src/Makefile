@@ -733,7 +733,7 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 		-static -liuplua51 \
 		-liupluagl51 -liupluaimglib51 \
 		-liupluaole51 \
-		-liup -liupgl\
+		-liup -liupgl -liup_pplot\
 		-liupimglib -liupole \
 		-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
 		-liupluacontrols51 -liupcontrols  \

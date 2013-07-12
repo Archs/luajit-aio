@@ -546,8 +546,8 @@ static int pmain(lua_State *L)
   iuplua_open(L);
   iupcontrolslua_open(L);
   iupkey_open(L); 
+  iup_pplotlua_open(L);
   // iuplua_close(L);
-  // iup_pplotlua_open(L);
   // cd
   cdlua_open(L);
   cdluaiup_open(L);
@@ -556,7 +556,6 @@ static int pmain(lua_State *L)
   iupimlua_open(L);
   imlua_open(L);
   imlua_open_process(L);
-  // imlua_open_cd(L);
   // gl
   iupolelua_open(L);
   iupgllua_open(L);
