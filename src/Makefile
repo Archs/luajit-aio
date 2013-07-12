@@ -168,7 +168,7 @@ CD_DIR=../3rd-party/cd-5.6.1_Win32_mingw4_lib
 
 
 CC= gcc.exe
-CFLAGS= -I. -I.. -Ilh -Isocket \
+CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
 		-I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
 	   	-DCD_NO_OLD_INTERFACE -D_WIN32_WINNT=0x0501 \
 		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
@@ -204,8 +204,7 @@ TARGET_STRIP= $(CROSS)strip
 TARGET_SONAME= libluajit-$(ABIVER).so.$(MAJVER)
 TARGET_DYLIBNAME= libluajit-$(ABIVER).$(MAJVER).dylib
 TARGET_DYLIBPATH= $(or $(PREFIX),/usr/local)/lib/$(TARGET_DYLIBNAME)
-# TARGET_DLLNAME= lua$(NODOTABIVER).dll
-TARGET_DLLNAME= aiox.dll
+TARGET_DLLNAME= lua$(NODOTABIVER).dll
 TARGET_XSHLDFLAGS= -shared -fPIC -Wl,-soname,$(TARGET_SONAME)
 TARGET_DYNXLDOPTS=
 
@@ -455,32 +454,23 @@ LJVM_O= lj_vm.o
 LJVM_BOUT= $(LJVM_S)
 LJVM_MODE= elfasm
 
-OTHTER_SRC= $(wildcard iup*.c)
-OTHTER_SRC+= $(wildcard il*.c)
-OTHTER_O= $(patsubst %.c,%.o,$(OTHTER_SRC)) 
+IUP_SRC= $(wildcard iup/*.c)
+IUP_O= $(patsubst %.c,%.o,$(IUP_SRC))
+CPP_SRC= $(wildcard iup/*.cpp)
+IUP_O+= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
 
-CPP_SRC= $(wildcard *.cpp)
-CPP_O= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
+IUPLUA_SRC+= $(wildcard iuplua/*.c)
+IUPLUA_O= $(patsubst %.c,%.o,$(IUPLUA_SRC))
+
+
+SOCKET_SRC= $(wildcard socket/*.c)
+SOCKET_SRC+= $(wildcard uuid/*.c)
+SOCKET_SRC+= $(wildcard pack/*.c)
+SOCKET_O= $(patsubst %.c,%.o,$(SOCKET_SRC))
 
 LJLIB_O= lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
 	 lib_io.o lib_os.o lib_package.o lib_debug.o lib_jit.o lib_ffi.o \
-	 socket/luasocket.o \
-	 socket/timeout.o \
-	 socket/buffer.o \
-	 socket/io.o \
-	 socket/auxiliar.o \
-	 socket/options.o \
-	 socket/inet.o \
-	 socket/tcp.o \
-	 socket/udp.o \
-	 socket/except.o \
-	 socket/select.o \
-	 socket/wsocket.o \
-	 socket/mime.o\
-	 uuid/wuuid.o\
-	 uuid/luuid.o\
-	 pack/lpack.o\
-	 $(OTHTER_O)
+	 $(SOCKET_O)
 
 LJLIB_C= $(LJLIB_O:.o=.c)
 
@@ -701,6 +691,26 @@ include Makefile.dep
 ##############################################################################
 # Target file rules.
 ##############################################################################
+LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32
+
+LDFLAGS_IUP= -lgdi32 -lcomdlg32 -lcomctl32 -luuid \
+			 -lole32 -loleaut32 -limm32 \
+			 -lstdc++ -lkernel32 -lsnmpapi -lWinspool  -lopengl32
+
+LDFLAGS_IUPLUA= -liuplua51 \
+				-liupluagl51 -liupluaimglib51 \
+				-liupluaole51 \
+				-liup -liupgl\
+				-liupimglib -liupole \
+				-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
+				-liupluacontrols51 -liupcontrols  \
+				-liupluacd51 -liupcd -lcdlua51 -liupim \
+				-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
+				-liupluaim51 -lz \
+				-L$(IUP_DIR) \
+				-L$(CD_DIR) \
+				-L$(IM_DIR)
+
 
 $(LUAJIT_A): $(LJVMCORE_O)
 	$(E) "AR        $@"
@@ -708,61 +718,52 @@ $(LUAJIT_A): $(LJVMCORE_O)
 	$(Q)cp $@ ..
 
 # The dependency on _O, but linking with _DYNO is intentional.
-$(LUAJIT_SO): $(LJVMCORE_O) $(CPP_O)
+$(LUAJIT_SO): $(LJVMCORE_O)
 	$(E) "DYNLINK   $@"
-	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(CPP_O) $(TARGET_ALIBS) \
-		-static -Llib \
-		-lcdlua51 \
-		-lcdluagl51 \
-		-liup_pplot -liupole -limlua_process51 -lim_process \
-		-lcdluaim51 -limlua51 \
-		-lim -lcdcontextplus -lcd -lfreetype6 -lz \
-		-lstdc++ -lkernel32 \
-		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
-		-lsnmpapi -lWinspool  -lopengl32\
-		-lrpcrt4 -lwsock32 \
-		-L$(IUP_DIR) \
-		-L$(CD_DIR) \
-		-L$(IM_DIR)
+	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
+		-static $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 	# $(Q)cp $@ ../aiox.dll
 
-$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(CPP_O)
+$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(CPP_O) $(TARGET_ALIBS)\
-		-static -liuplua51 \
-		-liupluagl51 -liupluaimglib51 \
-		-liupluaole51 \
-		-liup -liupgl\
-		-liupimglib -liupole \
-		-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
-		-liupluacontrols51 -liupcontrols  \
-		-liupluacd51 -liupcd -lcdlua51 -liupim \
-		-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
-		-liupluaim51 -lz -lstdc++ -lkernel32\
-		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
-		-lsnmpapi -lWinspool  -lopengl32\
-		-lrpcrt4 -lwsock32 \
-		-L$(IUP_DIR) \
-		-L$(CD_DIR) \
-		-L$(IM_DIR)
-		# end
-		# -L../3rd-party/iup-3.8_Win32_dllw4_lib
-		#   -liup_scintilla 
-		# -liuplua_pplot51 
-		# -liupluatuio51  #confilicts with luasocket
-		# 		-lcdgl -lcdluagl51 -lcdpdf \
-		# -lftgl -lpdflib \
-		# -lcdcairo -lcdluacairo51\
-		#  -lcdluaim51 -lcdluapdf51 \
-
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)\
+		-static $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built LuaJIT"
 	$(Q)mv $@ ..
 
 ##############################################################################
 
+##############################################################################
+# Building with IUP and IUPLUA
+##############################################################################
+
+OUTNAME=aiox
+
+dll: $(LJVMCORE_O) $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
+	$(E) "DYNLINK   $(OUTNAME).dll"
+	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $(OUTNAME).dll $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
+		$(IUP_O) $(IUPLUA_O) \
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
+	$(Q)$(TARGET_STRIP) $(OUTNAME).dll
+	$(Q)cp $(OUTNAME).dll ..
+
+lib$(OUTNAME).a: $(LJVMCORE_O) $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
+	$(E) "AR   $@"
+	$(Q)$(TARGET_AR) $@ $(LJVMCORE_DYNO) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
+	$(Q)$(TARGET_STRIP) $@
+	$(Q)cp $@ ..
+
+lua.exe: $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) lib$(OUTNAME).a
+	$(E) "LINK      $@"
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_ALIBS)\
+		$(SOCKET_O) $(IUP_O) $(IUPLUA_O) lib$(OUTNAME).a\
+		-static $(LDFLAGS_SOCKET) $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP)
+	$(Q)$(TARGET_STRIP) $@
+	$(E) "OK        Successfully built $@"
+	$(Q)mv $@ ..
 ##############################################################################
 # Building srlua
 ##############################################################################
@@ -774,43 +775,13 @@ SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O)
+sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) \
-		-static -liuplua51 \
-		-liupluagl51 -liupluaimglib51 \
-		-liupluaole51 \
-		-liup -liupgl\
-		-liupimglib -liupole \
-		-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
-		-liupluacontrols51 -liupcontrols  \
-		-liupluacd51 -liupcd -lcdlua51 -liupim \
-		-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
-		-liupluaim51 -lz -lstdc++ -lkernel32\
-		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
-		-lsnmpapi -lWinspool  -lopengl32\
-		-lrpcrt4 -lwsock32 \
-		-L$(IUP_DIR) \
-		-L$(CD_DIR) \
-		-L$(IM_DIR)
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) \
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)\
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)\
 		-Wl,-subsystem,windows -Wl,-eWinMainSR \
-		-static -liuplua51 \
-		-liupluagl51 -liupluaimglib51 \
-		-liupluaole51 \
-		-liup -liupgl\
-		-liupimglib -liupole \
-		-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
-		-liupluacontrols51 -liupcontrols  \
-		-liupluacd51 -liupcd -lcdlua51 -liupim \
-		-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
-		-liupluaim51 -lz -lstdc++ -lkernel32\
-		-lgdi32 -lcomdlg32 -lcomctl32 -luuid -lole32 -loleaut32 -limm32\
-		-lsnmpapi -lWinspool  -lopengl32\
-		-lrpcrt4 -lwsock32 \
-		-L$(IUP_DIR) \
-		-L$(CD_DIR) \
-		-L$(IM_DIR)
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $(SRLUA).exe
 	$(Q)$(TARGET_STRIP) $(WSRLUA).exe
 	$(Q)mv $(SRLUA).exe ..
