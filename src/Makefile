@@ -503,7 +503,7 @@ ALL_HDRGEN= lj_bcdef.h lj_ffdef.h lj_libdef.h lj_recdef.h lj_folddef.h \
 	    host/buildvm_arch.h
 ALL_GEN= $(LJVM_S) $(ALL_HDRGEN) $(LIB_VMDEFP)
 WIN_RM= *.obj *.lib *.exp *.dll *.exe *.manifest *.pdb *.ilk
-ALL_RM= $(ALL_T) $(ALL_GEN) *.o host/*.o $(WIN_RM) uuid/*.o socket/*.o pack/*.o
+ALL_RM= $(ALL_T) $(ALL_GEN) *.o host/*.o $(WIN_RM) 
 
 ##############################################################################
 # Build mode handling.
@@ -595,7 +595,18 @@ amalg:
 	$(MAKE) all "LJCORE_O=ljamalg.o"
 
 clean:
-	$(HOST_RM) $(ALL_RM)
+	$(HOST_RM) $(ALL_RM) $(SOCKET_O)
+
+cleaniup:
+	rm -rf $(IUP_O)
+
+cleanlua:
+	rm -rf $(IUPLUA_O)
+
+cleanall:
+	make clean
+	make cleaniup
+	make cleanall
 
 depend:
 	@for file in $(ALL_HDRGEN); do \
@@ -726,10 +737,11 @@ $(LUAJIT_SO): $(LJVMCORE_O)
 	$(Q)cp $@ ..
 	# $(Q)cp $@ ../aiox.dll
 
-$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
+$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)\
-		-static $(LDFLAGS_SOCKET)
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)\
+		 $(TARGET_O) $(TARGET_ALIBS) \
+		-static $(LDFLAGS_SOCKET) $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP)
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built LuaJIT"
 	$(Q)mv $@ ..
@@ -775,11 +787,12 @@ SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
+sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)\
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) $(IUP_O) $(IUPLUA_O)\
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)\
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) \
+		$(IUP_O) $(IUPLUA_O) \
 		-Wl,-subsystem,windows -Wl,-eWinMainSR \
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $(SRLUA).exe
