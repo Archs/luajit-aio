@@ -204,7 +204,8 @@ TARGET_STRIP= $(CROSS)strip
 TARGET_SONAME= libluajit-$(ABIVER).so.$(MAJVER)
 TARGET_DYLIBNAME= libluajit-$(ABIVER).$(MAJVER).dylib
 TARGET_DYLIBPATH= $(or $(PREFIX),/usr/local)/lib/$(TARGET_DYLIBNAME)
-TARGET_DLLNAME= lua$(NODOTABIVER).dll
+# TARGET_DLLNAME= lua$(NODOTABIVER).dll
+TARGET_DLLNAME= aiox.dll
 TARGET_XSHLDFLAGS= -shared -fPIC -Wl,-soname,$(TARGET_SONAME)
 TARGET_DYNXLDOPTS=
 
@@ -709,7 +710,7 @@ $(LUAJIT_A): $(LJVMCORE_O)
 # The dependency on _O, but linking with _DYNO is intentional.
 $(LUAJIT_SO): $(LJVMCORE_O) $(CPP_O)
 	$(E) "DYNLINK   $@"
-	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
+	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(CPP_O) $(TARGET_ALIBS) \
 		-static -Llib \
 		-lcdlua51 \
 		-lcdluagl51 \
@@ -725,15 +726,15 @@ $(LUAJIT_SO): $(LJVMCORE_O) $(CPP_O)
 		-L$(IM_DIR)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
-	$(Q)cp $@ ../aiox.dll
+	# $(Q)cp $@ ../aiox.dll
 
-$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
+$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(CPP_O)
 	$(E) "LINK      $@"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)\
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(CPP_O) $(TARGET_ALIBS)\
 		-static -liuplua51 \
 		-liupluagl51 -liupluaimglib51 \
 		-liupluaole51 \
-		-liup -liupgl -liup_pplot\
+		-liup -liupgl\
 		-liupimglib -liupole \
 		-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
 		-liupluacontrols51 -liupcontrols  \
