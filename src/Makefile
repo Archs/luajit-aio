@@ -34,9 +34,9 @@ CC= gcc
 # to slow down the C part by not omitting it. Debugging, tracebacks and
 # unwinding are not affected -- the assembler part has frame unwind
 # information and GCC emits it where needed (x64) or with -g (see CCDEBUG).
-# CCOPT= -O2 -fomit-frame-pointer
+CCOPT= -O2 -fomit-frame-pointer
 # Use this if you want to generate a smaller binary (but it's slower):
-CCOPT= -Os -fomit-frame-pointer
+#CCOPT= -Os -fomit-frame-pointer
 # Note: it's no longer recommended to use -O3 with GCC 4.x.
 # The I-Cache bloat usually outweighs the benefits from aggressive inlining.
 #
@@ -166,7 +166,6 @@ IUP_DIR=../3rd-party/iup-3.8_Win32_mingw4_lib
 IM_DIR=../3rd-party/im-3.8.1_Win32_mingw4_lib
 CD_DIR=../3rd-party/cd-5.6.1_Win32_mingw4_lib
 
-
 CC= gcc.exe
 CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
 		-I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
@@ -275,7 +274,7 @@ endif
 
 ifeq (Windows,$(findstring Windows,$(OS))$(MSYSTEM)$(TERM))
   HOST_SYS= Windows
-  HOST_RM= rm
+  HOST_RM= del
 else
   HOST_SYS:= $(shell uname -s)
   ifneq (,$(findstring MINGW,$(HOST_SYS)))
@@ -454,26 +453,17 @@ LJVM_O= lj_vm.o
 LJVM_BOUT= $(LJVM_S)
 LJVM_MODE= elfasm
 
-IUP_SRC= $(wildcard iup/*.c)
-IUP_O= $(patsubst %.c,%.o,$(IUP_SRC))
-CPP_SRC= $(wildcard iup/*.cpp)
-IUP_O+= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
 WINAPI_SRC= $(wildcard winapi/*.c)
 WINAPI_O= $(patsubst %.c,%.o,$(WINAPI_SRC)) 
 
-IUPLUA_SRC+= $(wildcard iuplua/*.c)
-IUPLUA_O= $(patsubst %.c,%.o,$(IUPLUA_SRC))
-
-
 SOCKET_SRC= $(wildcard socket/*.c)
-SOCKET_SRC+= $(wildcard uuid/*.c)
-SOCKET_SRC+= $(wildcard pack/*.c)
+# SOCKET_SRC+= $(wildcard uuid/*.c)
+# SOCKET_SRC+= $(wildcard pack/*.c)
 SOCKET_O= $(patsubst %.c,%.o,$(SOCKET_SRC))
+SOCKET_O+= $(WINAPI_O)
 
 LJLIB_O= lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
-	 lib_io.o lib_os.o lib_package.o lib_debug.o lib_jit.o lib_ffi.o \
-	 $(SOCKET_O) $(WINAPI_O)
-
+	 lib_io.o lib_os.o lib_package.o lib_debug.o lib_jit.o lib_ffi.o $(SOCKET_O)
 LJLIB_C= $(LJLIB_O:.o=.c)
 
 LJCORE_O= lj_gc.o lj_err.o lj_char.o lj_bc.o lj_obj.o \
@@ -505,7 +495,7 @@ ALL_HDRGEN= lj_bcdef.h lj_ffdef.h lj_libdef.h lj_recdef.h lj_folddef.h \
 	    host/buildvm_arch.h
 ALL_GEN= $(LJVM_S) $(ALL_HDRGEN) $(LIB_VMDEFP)
 WIN_RM= *.obj *.lib *.exp *.dll *.exe *.manifest *.pdb *.ilk
-ALL_RM= $(ALL_T) $(ALL_GEN) *.o host/*.o $(WIN_RM) 
+ALL_RM= $(ALL_T) $(ALL_GEN) *.o host/*.o $(WIN_RM)
 
 ##############################################################################
 # Build mode handling.
@@ -530,7 +520,7 @@ ifeq (Windows,$(TARGET_SYS))
   # C modules cannot be loaded, because they bind to lua51.dll.
   ifneq (static,$(BUILDMODE))
     BUILDMODE= dynamic
-    # TARGET_XCFLAGS+= -DLUA_BUILD_AS_DLL
+    TARGET_XCFLAGS+= -DLUA_BUILD_AS_DLL
   endif
 endif
 ifeq (Darwin,$(TARGET_SYS))
@@ -597,18 +587,7 @@ amalg:
 	$(MAKE) all "LJCORE_O=ljamalg.o"
 
 clean:
-	$(HOST_RM) $(ALL_RM) $(SOCKET_O)
-
-cleaniup:
-	rm -rf $(IUP_O)
-
-cleanlua:
-	rm -rf $(IUPLUA_O)
-
-cleanall:
-	make clean
-	make cleaniup
-	make cleanall
+	$(HOST_RM) $(ALL_RM)
 
 depend:
 	@for file in $(ALL_HDRGEN); do \
@@ -697,7 +676,7 @@ $(LUAJIT_O):
 
 $(HOST_O): %.o: %.c
 	$(E) "HOSTCC    $@"
-	$(HOST_CC) $(HOST_ACFLAGS) -c -o $@ $<
+	$(Q)$(HOST_CC) $(HOST_ACFLAGS) -c -o $@ $<
 
 include Makefile.dep
 
@@ -706,12 +685,42 @@ include Makefile.dep
 ##############################################################################
 LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32 -lpsapi -lMpr
 
+$(LUAJIT_A): $(LJVMCORE_O)
+	$(E) "AR        $@"
+	$(Q)$(TARGET_AR) $@ $(LJVMCORE_O)
+
+# The dependency on _O, but linking with _DYNO is intentional.
+$(LUAJIT_SO): $(LJVMCORE_O)
+	$(E) "DYNLINK   $@"
+	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) $(LDFLAGS_SOCKET)
+	$(Q)$(TARGET_STRIP) $@
+	$(Q)cp $@ ..
+
+$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
+	$(E) "LINK      $@"
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)
+	$(Q)$(TARGET_STRIP) $@
+	$(E) "OK        Successfully built LuaJIT"
+	$(Q)mv $@ ..
+
+##############################################################################
+
+
+###############################################################################
+#  my build targets
+###############################################################################
+IUP_SRC= $(wildcard iup/*.c)
+IUP_O= $(patsubst %.c,%.o,$(IUP_SRC))
+CPP_SRC= $(wildcard iup/*.cpp)
+IUP_O+= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
+
+
 LDFLAGS_IUP= -lgdi32 -lcomdlg32 -lcomctl32 -luuid \
 			 -lole32 -loleaut32 -limm32 \
 			 -lstdc++ -lkernel32 -lsnmpapi -lWinspool  -lopengl32
 
-LDFLAGS_IUPLUA= -liuplua51 \
-				-liupluagl51 -liupluaimglib51 \
+LDFLAGS_IUPLUA= -liuplua51 -liuplua_pplot51 \
+				-liupluagl51 -liupluaimglib51 -liup_pplot\
 				-liupluaole51 \
 				-liup -liupgl\
 				-liupimglib -liupole \
@@ -724,63 +733,41 @@ LDFLAGS_IUPLUA= -liuplua51 \
 				-L$(CD_DIR) \
 				-L$(IM_DIR)
 
+ONAME= aiox
+ODLL= $(ONAME).dll
+OLIB= lib$(ONAME).a
+OEXE= $(ONAME).exe
+ONAME_O= luajit-aiox.o
 
-$(LUAJIT_A): $(LJVMCORE_O)
-	$(E) "AR        $@"
-	$(Q)$(TARGET_AR) $@ $(LJVMCORE_O)
-	$(Q)cp $@ ..
+aio:$(ODLL) $(OLIB) $(OEXE) sr
 
-# The dependency on _O, but linking with _DYNO is intentional.
-$(LUAJIT_SO): $(LJVMCORE_O)
+$(ODLL): $(LJVMCORE_O) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "DYNLINK   $@"
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
-		-static $(LDFLAGS_SOCKET)
-	$(Q)$(TARGET_STRIP) $@
-	$(Q)cp $@ ..
-	# $(Q)cp $@ ../aiox.dll
-
-$(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
-	$(E) "LINK      $@"
-	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)\
-		 $(TARGET_O) $(TARGET_ALIBS) \
-		-static $(LDFLAGS_SOCKET) $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP)
-	$(Q)$(TARGET_STRIP) $@
-	$(E) "OK        Successfully built LuaJIT"
-	$(Q)mv $@ ..
-
-##############################################################################
-
-##############################################################################
-# Building with IUP and IUPLUA
-##############################################################################
-
-OUTNAME=aiox
-
-dll: $(LJVMCORE_O) $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
-	$(E) "DYNLINK   $(OUTNAME).dll"
-	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $(OUTNAME).dll $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
 		$(IUP_O) $(IUPLUA_O) \
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
-	$(Q)$(TARGET_STRIP) $(OUTNAME).dll
-	$(Q)cp $(OUTNAME).dll ..
-
-lib$(OUTNAME).a: $(LJVMCORE_O) $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
-	$(E) "AR   $@"
-	$(Q)$(TARGET_AR) $@ $(LJVMCORE_DYNO) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
-lua.exe: $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) lib$(OUTNAME).a
+$(OLIB): $(LJVMCORE_O) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
+	$(E) "AR   $@"
+	$(Q)$(TARGET_AR) $@ $(LJVMCORE_DYNO) $(IUP_O) $(IUPLUA_O)
+	$(Q)$(TARGET_STRIP) $@
+	$(Q)cp $@ ..
+
+$(OEXE): $(TARGET_O) $(ONAME_O) $(TARGET_DEP) lib$(ONAME).a
 	$(E) "LINK      $@"
-	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_ALIBS)\
-		$(SOCKET_O) $(IUP_O) $(IUPLUA_O) lib$(OUTNAME).a\
-		-static $(LDFLAGS_SOCKET) $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP)
+	$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(ONAME_O) $(TARGET_ALIBS)\
+		$(SOCKET_O) $(IUP_O) $(IUPLUA_O) lib$(ONAME).a\
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) 
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built $@"
 	$(Q)mv $@ ..
-##############################################################################
-# Building srlua
-##############################################################################
+
+###############################################################################
+#  srlua
+###############################################################################
+
 SRLUA=srlua
 WSRLUA=wsrlua
 GLUE=glue
@@ -789,13 +776,13 @@ SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(IUP_O) $(IUPLUA_O)
+sr:$(SRLUA_O) $(GLUE_O) $(WSRLUA_O) $(OLIB)
 	$(E) "LINK      $(SRLUA).exe"
-	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) $(IUP_O) $(IUPLUA_O)\
-		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(OLIB) \
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) 
 	$(E) "LINK      $(WSRLUA).exe"
-	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) \
-		$(IUP_O) $(IUPLUA_O) \
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(OLIB) \
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)\
 		-Wl,-subsystem,windows -Wl,-eWinMainSR \
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $(SRLUA).exe
@@ -806,5 +793,3 @@ sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(IUP_O) $(IUPLUA_
 	$(TARGET_LD) $(TARGET_ALDFLAGS) $(GLUE_O) -o $(GLUE).exe
 	$(Q)$(TARGET_STRIP) $(GLUE).exe
 	$(Q)mv $(GLUE).exe ..
-
-

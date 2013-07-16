@@ -122,7 +122,7 @@
 // #endif
 
 // #define LUALIB_API	LUA_API
-#define LUA_API 
+#define LUA_API 	 __declspec(dllexport)
 #define LUALIB_API   LUA_API
 
 /* Support for internal assertions. */

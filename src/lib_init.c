@@ -1899,9 +1899,9 @@ LUALIB_API void luaL_openlibs(lua_State *L)
   // add by me
   // socket
   luaopen_socket_core(L);
-  luaopen_uuid(L);
   luaopen_mime_core(L);
-  luaopen_pack(L);
+  // luaopen_uuid(L);
+  // luaopen_pack(L);
   // winapi support
   luaopen_winapi(L);
 
