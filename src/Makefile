@@ -174,7 +174,7 @@ CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
 		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
 		-DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
 		-DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH \
-		-DIUPLUA_THREADED
+		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1
 
 CCOPTIONS= $(CCDEBUG) $(CCOPT) $(CCWARN) $(XCFLAGS) $(CFLAGS)
 LDOPTIONS= $(CCDEBUG) $(LDFLAGS)
@@ -458,6 +458,8 @@ IUP_SRC= $(wildcard iup/*.c)
 IUP_O= $(patsubst %.c,%.o,$(IUP_SRC))
 CPP_SRC= $(wildcard iup/*.cpp)
 IUP_O+= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
+WINAPI_SRC= $(wildcard winapi/*.c)
+WINAPI_O= $(patsubst %.c,%.o,$(WINAPI_SRC)) 
 
 IUPLUA_SRC+= $(wildcard iuplua/*.c)
 IUPLUA_O= $(patsubst %.c,%.o,$(IUPLUA_SRC))
@@ -470,7 +472,7 @@ SOCKET_O= $(patsubst %.c,%.o,$(SOCKET_SRC))
 
 LJLIB_O= lib_base.o lib_math.o lib_bit.o lib_string.o lib_table.o \
 	 lib_io.o lib_os.o lib_package.o lib_debug.o lib_jit.o lib_ffi.o \
-	 $(SOCKET_O)
+	 $(SOCKET_O) $(WINAPI_O)
 
 LJLIB_C= $(LJLIB_O:.o=.c)
 
@@ -702,7 +704,7 @@ include Makefile.dep
 ##############################################################################
 # Target file rules.
 ##############################################################################
-LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32
+LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32 -lpsapi -lMpr
 
 LDFLAGS_IUP= -lgdi32 -lcomdlg32 -lcomctl32 -luuid \
 			 -lole32 -loleaut32 -limm32 \
