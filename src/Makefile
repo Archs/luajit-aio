@@ -776,6 +776,27 @@ lua.exe: $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP) lib$(OUTNAME).a
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built $@"
 	$(Q)mv $@ ..
+
+##############################################################################
+# Building different version for IUP/CD/IM
+##############################################################################
+versions:luajit-iup.exe
+
+luajit-iup.exe:luajit-iup.o lib$(OUTNAME).a $(TARGET_DEP) $(SOCKET_O) $(IUP_O)
+	$(E) "LINK      $@"
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ luajit-iup.o $(SOCKET_O) \
+		 $(TARGET_O) $(TARGET_ALIBS) \
+		-static $(LDFLAGS_SOCKET)  \
+				-liuplua51 -liup \
+				-l$(OUTNAME) -L. \
+				$(LDFLAGS_IUP) $(LDFLAGS_SOCKET) \
+				-L$(IUP_DIR) \
+				-L$(CD_DIR) \
+				-L$(IM_DIR)
+	$(Q)$(TARGET_STRIP) $@
+	$(E) "OK        Successfully built LuaJIT"
+	$(Q)mv $@ ..
+
 ##############################################################################
 # Building srlua
 ##############################################################################
@@ -787,15 +808,15 @@ SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr:$(SRLUA_O) $(TARGET_O) $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(IUP_O) $(IUPLUA_O)
+sr:$(SRLUA_O) lib$(OUTNAME).a $(TARGET_DEP) $(GLUE_O) $(WSRLUA_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "LINK      $(SRLUA).exe"
-	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(TARGET_O) $(IUP_O) $(IUPLUA_O)\
-		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(IUP_O) $(IUPLUA_O)\
+		-static -L. -laiox $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
 	$(E) "LINK      $(WSRLUA).exe"
-	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(TARGET_O) \
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) \
 		$(IUP_O) $(IUPLUA_O) \
 		-Wl,-subsystem,windows -Wl,-eWinMainSR \
-		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
+		-static -L. -laiox $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) 
 	$(Q)$(TARGET_STRIP) $(SRLUA).exe
 	$(Q)$(TARGET_STRIP) $(WSRLUA).exe
 	$(Q)mv $(SRLUA).exe ..
