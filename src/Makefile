@@ -173,7 +173,7 @@ CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
 		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
 		-DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
 		-DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH \
-		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1
+		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1 -DCURL_STATICLIB
 
 CCOPTIONS= $(CCDEBUG) $(CCOPT) $(CCWARN) $(XCFLAGS) $(CFLAGS)
 LDOPTIONS= $(CCDEBUG) $(LDFLAGS)
@@ -683,16 +683,42 @@ include Makefile.dep
 ##############################################################################
 # Target file rules.
 ##############################################################################
+LUACURL_SRC= $(wildcard curl/*.c)
+LUACURL_O= $(patsubst %.c,%.o,$(LUACURL_SRC))
+
+
 LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32 -lpsapi -lMpr
+
+LDFLAGS_IUP= -lgdi32 -lcomdlg32 -lcomctl32 -luuid \
+			 -lole32 -loleaut32 -limm32 \
+			 -lstdc++ -lkernel32 -lsnmpapi -lWinspool  -lopengl32
+
+LDFLAGS_IUPLUA= -liuplua51 -liuplua_pplot51 \
+				-liupluagl51 -liupluaimglib51 -liup_pplot\
+				-liupluaole51 \
+				-liup -liupgl\
+				-liupimglib -liupole \
+				-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
+				-liupluacontrols51 -liupcontrols  \
+				-liupluacd51 -liupcd -lcdlua51 -liupim \
+				-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
+				-liupluaim51 -lz \
+				-L$(IUP_DIR) \
+				-L$(CD_DIR) \
+				-L$(IM_DIR)
+
+LDFLAGS_CURL= -L../3rd-party/cURL -lcurl -lssh2 -lrtmp -lssl -lcrypto -lidn -lz \
+			  -lgdi32 -lwldap32 -lws2_32 -lwinmm
 
 $(LUAJIT_A): $(LJVMCORE_O)
 	$(E) "AR        $@"
 	$(Q)$(TARGET_AR) $@ $(LJVMCORE_O)
 
 # The dependency on _O, but linking with _DYNO is intentional.
-$(LUAJIT_SO): $(LJVMCORE_O)
+$(LUAJIT_SO): $(LJVMCORE_O) $(LUACURL_O)
 	$(E) "DYNLINK   $@"
-	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) $(LDFLAGS_SOCKET)
+	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(LUACURL_O) \
+	  			 -static $(TARGET_ALIBS) $(LDFLAGS_SOCKET) $(LDFLAGS_CURL)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
@@ -714,44 +740,33 @@ IUP_O= $(patsubst %.c,%.o,$(IUP_SRC))
 CPP_SRC= $(wildcard iup/*.cpp)
 IUP_O+= $(patsubst %.cpp,%.o,$(CPP_SRC)) 
 
-
-LDFLAGS_IUP= -lgdi32 -lcomdlg32 -lcomctl32 -luuid \
-			 -lole32 -loleaut32 -limm32 \
-			 -lstdc++ -lkernel32 -lsnmpapi -lWinspool  -lopengl32
-
-LDFLAGS_IUPLUA= -liuplua51 -liuplua_pplot51 \
-				-liupluagl51 -liupluaimglib51 -liup_pplot\
-				-liupluaole51 \
-				-liup -liupgl\
-				-liupimglib -liupole \
-				-liupluaim51 -liupim -limlua51 -lim -limlua_process51 -lim_process\
-				-liupluacontrols51 -liupcontrols  \
-				-liupluacd51 -liupcd -lcdlua51 -liupim \
-				-lcdluaim51 -lcdluacontextplus51 -lcdlua51 -lcd -lfreetype6 \
-				-liupluaim51 -lz \
-				-L$(IUP_DIR) \
-				-L$(CD_DIR) \
-				-L$(IM_DIR)
-
 ONAME= aiox
 ODLL= $(ONAME).dll
 OLIB= lib$(ONAME).a
 OEXE= $(ONAME).exe
 ONAME_O= luajit-aiox.o
+COREDLL= $(ONAME)_CORE.dll
 
-aio:$(ODLL) $(OLIB) $(OEXE) sr
+aio:$(ODLL) $(OLIB) $(OEXE) $(COREDLL) sr 
+
+$(COREDLL): $(LJVMCORE_O) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(CURL_O)
+	$(E) "DYNLINK   $@"
+	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
+		-static $(LDFLAGS_SOCKET) $(LUACURL_O) $(LDFLAGS_CURL) 
+	$(Q)$(TARGET_STRIP) $@
+	$(Q)cp $@ ..
 
 $(ODLL): $(LJVMCORE_O) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "DYNLINK   $@"
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) $(TARGET_ALIBS) \
-		$(IUP_O) $(IUPLUA_O) \
+		$(IUP_O) $(IUPLUA_O) $(LUACURL_O) $(LDFLAGS_CURL) \
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
 $(OLIB): $(LJVMCORE_O) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O)
 	$(E) "AR   $@"
-	$(Q)$(TARGET_AR) $@ $(LJVMCORE_DYNO) $(IUP_O) $(IUPLUA_O)
+	$(Q)$(TARGET_AR) $@ $(LJVMCORE_DYNO) $(IUP_O) $(IUPLUA_O) $(LUACURL_O) 
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
@@ -759,7 +774,7 @@ $(OEXE): $(TARGET_O) $(ONAME_O) $(TARGET_DEP) lib$(ONAME).a
 	$(E) "LINK      $@"
 	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(ONAME_O) $(TARGET_ALIBS)\
 		$(SOCKET_O) $(IUP_O) $(IUPLUA_O) lib$(ONAME).a\
-		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) 
+		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) $(LDFLAGS_CURL)
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built $@"
 	$(Q)mv $@ ..
