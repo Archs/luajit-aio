@@ -1906,7 +1906,7 @@ LUALIB_API void luaL_openlibs(lua_State *L)
   luaopen_winapi(L);
 
   // curl
-  // luaopen_cURL(L);
+  luaopen_cURL(L);
 
   // end add by me
   dostring (L, luaSocketCode_socket, "socket");
