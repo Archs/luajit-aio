@@ -173,7 +173,8 @@ CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
 		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
 		-DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
 		-DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH \
-		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1 -DCURL_STATICLIB
+		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1 -DCURL_STATICLIB \
+		-fno-exceptions
 
 CCOPTIONS= $(CCDEBUG) $(CCOPT) $(CCWARN) $(XCFLAGS) $(CFLAGS)
 LDOPTIONS= $(CCDEBUG) $(LDFLAGS)
@@ -685,9 +686,12 @@ include Makefile.dep
 ##############################################################################
 LUACURL_SRC= $(wildcard curl/*.c)
 LUACURL_O= $(patsubst %.c,%.o,$(LUACURL_SRC))
+LUASEC_SRC= $(wildcard luasec/*.c)
+LUASEC_O= $(patsubst %.c,%.o,$(LUASEC_SRC))
 
-
-LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32 -lpsapi -lMpr
+LDFLAGS_SOCKET= -luuid -lrpcrt4 -lwsock32 -lpsapi -lMpr 
+                # -Wl,--file-alignment,0x0080 
+                # -Wl,--section-alignment,0x0080
 
 LDFLAGS_IUP= -lgdi32 -lcomdlg32 -lcomctl32 -luuid \
 			 -lole32 -loleaut32 -limm32 \
@@ -710,6 +714,8 @@ LDFLAGS_IUPLUA= -liuplua51 -liuplua_pplot51 \
 LDFLAGS_CURL= -L../3rd-party/cURL -lcurl -lssh2 -lrtmp -lssl -lcrypto -lidn -lz \
 			  -lgdi32 -lwldap32 -lws2_32 -lwinmm
 
+LDFLAGS_SEC= -L../3rd-party/cURL -lssl -lcrypto -lwsock32 -lgdi32
+
 $(LUAJIT_A): $(LJVMCORE_O)
 	$(E) "AR        $@"
 	$(Q)$(TARGET_AR) $@ $(LJVMCORE_O)
@@ -717,7 +723,7 @@ $(LUAJIT_A): $(LJVMCORE_O)
 # The dependency on _O, but linking with _DYNO is intentional.
 $(LUAJIT_SO): $(LJVMCORE_O)
 	$(E) "DYNLINK   $@"
-	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) \
+	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) \
 	  			 $(TARGET_ALIBS) $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
@@ -746,10 +752,19 @@ OLIB= lib$(ONAME).a
 OEXE= $(ONAME).exe
 ONAME_O= luajit-aiox.o
 COREDLL= lua_curl.dll
+SECDLL= luasec.dll
 
-aio:$(ODLL) $(OLIB) $(OEXE) $(COREDLL) sr 
+aio:$(SECDLL) $(ODLL) $(OLIB) $(OEXE) $(COREDLL) sr 
 
 VM_CORE_CURL= $(patsubst lib_init.o,lib_init_curl.o,$(LJVMCORE_DYNO))
+VM_CORE_SEC= $(patsubst lib_init.o,lib_init.o,$(LJVMCORE_DYNO))
+
+$(SECDLL): $(VM_CORE_SEC) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(LUASEC_O)
+	$(E) "DYNLINK   $@"
+	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(VM_CORE_SEC) $(TARGET_ALIBS) \
+		-static $(LDFLAGS_SOCKET) $(LUASEC_O) $(LDFLAGS_SEC) 
+	$(Q)$(TARGET_STRIP) $@
+	$(Q)cp $@ ..
 
 $(COREDLL): $(VM_CORE_CURL) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(CURL_O)
 	$(E) "DYNLINK   $@"
