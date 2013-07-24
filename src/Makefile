@@ -166,16 +166,6 @@ IUP_DIR=../3rd-party/iup-3.8_Win32_mingw4_lib
 IM_DIR=../3rd-party/im-3.8.1_Win32_mingw4_lib
 CD_DIR=../3rd-party/cd-5.6.1_Win32_mingw4_lib
 
-CC= gcc.exe
-CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
-		-I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
-	   	-DCD_NO_OLD_INTERFACE -D_WIN32_WINNT=0x0501 \
-		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
-		-DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
-		-DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH \
-		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1 -DCURL_STATICLIB \
-		-fno-exceptions
-
 CCOPTIONS= $(CCDEBUG) $(CCOPT) $(CCWARN) $(XCFLAGS) $(CFLAGS)
 LDOPTIONS= $(CCDEBUG) $(LDFLAGS)
 
@@ -741,6 +731,16 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 ###############################################################################
 #  my build targets
 ###############################################################################
+CC= gcc.exe
+CFLAGS= -I. -I.. -Iiuplua/lh -Isocket -I../include -I../../include\
+		-I$(CD_DIR)/include -I$(IM_DIR)/include -I$(IUP_DIR)/include \
+	   	-DCD_NO_OLD_INTERFACE -D_WIN32_WINNT=0x0501 \
+		-D_WIN32_IE=0x600 -DWINVER=0x0501 -DNOTREEVIEW \
+		-DTEC_UNAME=dllw4 -DTEC_SYSNAME=Win32 -DTEC_LITTLEENDIAN \
+		-DTEC_32 -DWIN32 -DNDEBUG -D_IUP_PPLOT_ -DIUPLUA_USELH \
+		-DIUPLUA_THREADED -Os -DPSAPI_VERSION=1 -DCURL_STATICLIB \
+		-fno-exceptions
+
 IUP_SRC= $(wildcard iup/*.c)
 IUP_O= $(patsubst %.c,%.o,$(IUP_SRC))
 CPP_SRC= $(wildcard iup/*.cpp)
