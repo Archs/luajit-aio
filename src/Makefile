@@ -713,7 +713,7 @@ $(LUAJIT_A): $(LJVMCORE_O)
 # The dependency on _O, but linking with _DYNO is intentional.
 $(LUAJIT_SO): $(LJVMCORE_O)
 	$(E) "DYNLINK   $@"
-	$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) \
+	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(LJVMCORE_DYNO) \
 	  			 $(TARGET_ALIBS) $(LDFLAGS_SOCKET)
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
@@ -723,7 +723,7 @@ $(LUAJIT_T): $(TARGET_O) $(LUAJIT_O) $(TARGET_DEP)
 	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $@ $(LUAJIT_O) $(TARGET_O) $(TARGET_ALIBS)
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built LuaJIT"
-	$(Q)mv $@ ..
+	$(Q)cp $@ ..
 
 ##############################################################################
 
@@ -751,22 +751,22 @@ ODLL= $(ONAME).dll
 OLIB= lib$(ONAME).a
 OEXE= $(ONAME).exe
 ONAME_O= luajit-aiox.o
-COREDLL= lua_curl.dll
-SECDLL= luasec.dll
+CURL_DLL= lua_curl.dll
+SEC_DLL= lua_sec.dll
 
-aio:$(SECDLL) $(ODLL) $(OLIB) $(OEXE) $(COREDLL) sr 
+aio:$(SEC_DLL) $(ODLL) $(OLIB) $(OEXE) $(CURL_DLL) sr 
 
 VM_CORE_CURL= $(patsubst lib_init.o,lib_init_curl.o,$(LJVMCORE_DYNO))
-VM_CORE_SEC= $(patsubst lib_init.o,lib_init.o,$(LJVMCORE_DYNO))
+VM_CORE_SEC= $(patsubst lib_init.o,lib_init_sec.o,$(LJVMCORE_DYNO))
 
-$(SECDLL): $(VM_CORE_SEC) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(LUASEC_O)
+$(SEC_DLL): $(VM_CORE_SEC) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(LUASEC_O)
 	$(E) "DYNLINK   $@"
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(VM_CORE_SEC) $(TARGET_ALIBS) \
 		-static $(LDFLAGS_SOCKET) $(LUASEC_O) $(LDFLAGS_SEC) 
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
-$(COREDLL): $(VM_CORE_CURL) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(CURL_O)
+$(CURL_DLL): $(VM_CORE_CURL) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(CURL_O)
 	$(E) "DYNLINK   $@"
 	$(Q)$(TARGET_LD) $(TARGET_ASHLDFLAGS) -o $@ $(VM_CORE_CURL) $(TARGET_ALIBS) \
 		-static $(LDFLAGS_SOCKET) $(LUACURL_O) $(LDFLAGS_CURL) 
@@ -783,7 +783,7 @@ $(ODLL): $(VM_CORE_CURL) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA
 
 $(OLIB): $(VM_CORE_CURL) $(TARGET_O) $(TARGET_DEP) $(SOCKET_O) $(IUP_O) $(IUPLUA_O) $(LUACURL_O)
 	$(E) "AR   $@"
-	$(TARGET_AR) $@ $(VM_CORE_CURL) $(IUP_O) $(IUPLUA_O) $(LUACURL_O) 
+	$(Q)$(TARGET_AR) $@ $(VM_CORE_CURL) $(IUP_O) $(IUPLUA_O) $(LUACURL_O) 
 	$(Q)$(TARGET_STRIP) $@
 	$(Q)cp $@ ..
 
@@ -794,7 +794,7 @@ $(OEXE): $(TARGET_O) $(ONAME_O) $(TARGET_DEP) lib$(ONAME).a
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) $(LDFLAGS_CURL)
 	$(Q)$(TARGET_STRIP) $@
 	$(E) "OK        Successfully built $@"
-	$(Q)mv $@ ..
+	$(Q)cp $@ ..
 
 ###############################################################################
 #  srlua
@@ -804,23 +804,41 @@ SRLUA=srlua
 WSRLUA=wsrlua
 GLUE=glue
 
+SRTARG= $(SRLUA).exe
+WSRTARG= $(WSRLUA).exe
+GLUETARG=$(GLUE).exe
+
+
 SRLUA_O=srlua/$(SRLUA).o
 WSRLUA_O=srlua/$(WSRLUA).o
 GLUE_O=srlua/$(GLUE).o
 
-sr:$(SRLUA_O) $(GLUE_O) $(WSRLUA_O) $(OLIB)
-	$(E) "LINK      $(SRLUA).exe"
+sr: $(SRTARG) $(WSRTARG) $(GLUETARG) $(OLIB)
+
+$(SRTARG):$(SRLUA_O)
+	$(E) "LINK      $(@)"
 	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(SRLUA).exe $(SRLUA_O) $(OLIB) \
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) $(LDFLAGS_CURL)
-	$(E) "LINK      $(WSRLUA).exe"
+	$(Q)$(TARGET_STRIP) $(@)
+	$(Q)cp $(@) ..
+
+$(WSRTARG):$(WSRLUA_O)
+	$(E) "LINK      $(@)"
 	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) -o $(WSRLUA).exe $(SRLUA_O) $(WSRLUA_O) $(OLIB) \
 		-static $(LDFLAGS_IUPLUA) $(LDFLAGS_IUP) $(LDFLAGS_SOCKET) $(LDFLAGS_CURL)\
 		-Wl,-subsystem,windows -Wl,-eWinMainSR
-	$(Q)$(TARGET_STRIP) $(SRLUA).exe
-	$(Q)$(TARGET_STRIP) $(WSRLUA).exe
-	$(Q)mv $(SRLUA).exe ..
-	$(Q)mv $(WSRLUA).exe ..
-	$(E) "LINK      glue.exe"
-	$(TARGET_LD) $(TARGET_ALDFLAGS) $(GLUE_O) -o $(GLUE).exe
-	$(Q)$(TARGET_STRIP) $(GLUE).exe
-	$(Q)mv $(GLUE).exe ..
+	$(Q)$(TARGET_STRIP) $(@)
+	$(Q)cp $(@) ..
+
+$(GLUETARG):$(GLUE_O)
+	$(E) "LINK      $(@)"
+	$(Q)$(TARGET_LD) $(TARGET_ALDFLAGS) $(GLUE_O) -o $(GLUE).exe
+	$(Q)$(TARGET_STRIP) $(@)
+	$(Q)cp $(@) ..
+
+###############################################################################
+#  cleans
+###############################################################################
+
+clnll:
+	rm *.dll *.a *.exe
