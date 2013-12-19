@@ -5,7 +5,7 @@ Building
 
     make
 
-2. Dynamic Build    
+2. Static Build    
 
     make BUILDMODE=static
 
